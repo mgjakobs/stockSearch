@@ -5,3 +5,6 @@ Stock tickers and names are found by webscrabing e.g. wikipedia using tickerGene
 Search criteria can be set via technical indicator functions defined in technicalAnalysis.py
 
 searchStocks.py shows an example of using tickerGenerator.py and technicalAnalysis.py.
+
+Example
+python3 searchStocks.py -i sp500
