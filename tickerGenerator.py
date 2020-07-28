@@ -1,6 +1,7 @@
 import bs4 as bs
 import pickle
 import requests
+import sys
 
 #This class uses webscrabing (requests + bs4) to get the stock tickers
 #of popular stock index such S&P500 etc.
@@ -15,7 +16,7 @@ class Ticker():
             return 'OK'
 
         elif index == 'c25':
-            return 'OK'
+            self.saveC25Tickers()
 
         else:
             None
@@ -37,4 +38,24 @@ class Ticker():
             
         with open("sp500tickers.pickle","wb") as f:
             pickle.dump([tickers, stockNames], f)
+       
+    def saveC25Tickers(self):
+        resp = requests.get('https://en.wikipedia.org/wiki/OMX_Copenhagen_25')
+        soup = bs.BeautifulSoup(resp.text, 'lxml')
+        table = soup.find()
+
+        table = soup.find('table', {'class': 'wikitable sortable'})
+        tickers = []
+        stockNames = []
+
+        for row in table.findAll('tr')[1:]:
+            ticker = row.findAll('td')[2].text
+            ticker = ticker.strip('\n')
+            ticker = ticker.replace(' ', '-')
+            tickers.append(ticker+'.CO')
+
+            stockName = row.findAll('td')[0].text
+            stockNames.append(stockName)
         
+        with open("c25tickers.pickle","wb") as f:
+            pickle.dump([tickers, stockNames], f)

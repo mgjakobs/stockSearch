@@ -11,7 +11,7 @@ import pandas as pd
 
 class Analyzer():
     def __init__(self):
-        self.start = dt.datetime(2019,1,1)
+        self.start = dt.datetime(2018,1,1)
         self.end = dt.datetime.now()
 
     def get_tickers_info(self):
@@ -20,6 +20,7 @@ class Analyzer():
         pass
 
     def get_data(self,ticker):
+        #print(ticker)
         data = yf.download(ticker, self.start, self.end)
         return data
 
@@ -34,21 +35,53 @@ class Analyzer():
 
         #number of std. deviations.
         m = 2
+        winSize = 20
 
-        df['MA20'] = data['Adj Close'].rolling(window = 20).mean()
-        df['20dSTD'] = data['Adj Close'].rolling(window = 20).std()
+        df['MA20'] = data['Close'].ewm(span = winSize).mean()
+        df['20dSTD'] = data['Close'].ewm(span = winSize).std()
         df['upperB'] = df['MA20'] + df['20dSTD']*m
         df['lowerB'] = df['MA20'] - df['20dSTD']*m
         
         return df
 
-    def below_bollinger(self, data):
+    def upper_bollinger(self, data):
         state = False
         bbands = self.bollingerBands(data)
-        
-        if data['Adj Close'].iloc[-1] < bbands['lowerB'].iloc[-1]:
-            state = True
 
+        margin = 0.01 #1%
+
+        #is the difference (slope) of the MA20 positive or negative over 10 samples?
+        diffMA20 = bbands['MA20'][-1] - bbands['MA20'][-10:].mean()
+
+        #is the difference (slope) of the closing price positive or negatve over 10 samples?
+        diffClose = data['Close'][-1] - data['Close'][-10:].mean()
+
+        #if the slope is positive
+        if (diffMA20 > 0 and diffClose > 0):
+            #If the Close price has just gone up throug MA20 (uptrend)
+            if (data['Close'][-1]*(1+margin) > bbands['MA20'][-1]
+                and data['Close'][-1]*(1-margin) < bbands['MA20'][-1]):
+                state = True
+
+        return state
+
+    def golden_cross(self, data):
+        state = False
+
+        df = pd.DataFrame(columns = ['MA50', 'MA200'])
+
+        df['MA50'] = data['Close'].ewm(span = 50).mean()
+        df['MA200'] = data['Close'].ewm(span = 200).mean()
+        
+        diffMA50 = df['MA50'][-1] - df['MA50'][-10:].mean()
+
+        margin = 0.01 #1% margin
+
+        if diffMA50 > 0:
+            if (df['MA50'][-1]*(1+margin) > df['MA200'][-1] and 
+                df['MA50'][-1]*(1-margin) < df['MA200'][-1]):
+                state = True
+        
         return state
 
     def plot_data(self, ticker, stockName, data):
@@ -62,13 +95,28 @@ class Analyzer():
 
         s  = mpf.make_mpf_style(marketcolors=mc)
         '''
+
+        data['MA50'] = data['Close'].ewm(span = 50).mean()
+        data['MA200'] = data['Close'].ewm(span = 200).mean()
+
         bollingerFrame = self.bollingerBands(data)
-        bbands = bollingerFrame[['upperB', 'lowerB']]
+        bbands = bollingerFrame[['MA20', 'upperB', 'lowerB']]
         
         apd = mpf.make_addplot(bbands, linestyle = 'dashed', width = 0.6, color = 'white')
+        apd1 = mpf.make_addplot(data['MA50'])
+        apd2 = mpf.make_addplot(data['MA200'])
 
-        fig, ax = mpf.plot(data, title = "{} ({})".format(stockName, ticker), figscale = 2.0, type = 'candle', style = 'nightclouds', ylabel = "Price", volume = True, mav = (12,24), addplot = apd, returnfig = True)
-        fig.legend(['MAV12', 'MAV24', 'Upper Bollinger', 'Lower Bollinger'], frameon = False)
+        
+        #Moving averages
+        MA_short = 50
+        MA_long = 200
+
+        fig, ax = mpf.plot(data, title = "{} ({})".format(stockName, ticker), 
+                  figscale = 2.0, type = 'candle', style = 'nightclouds', 
+                  ylabel = "Price", volume = True, addplot = [apd1,apd2,apd], returnfig = True)
+        
+        fig.legend(['MAV{}'.format(MA_short), 'MAV{}'.format(MA_long), 'Bollinger Bands',
+                    ], frameon = False)
         plt.show()
         return
 
