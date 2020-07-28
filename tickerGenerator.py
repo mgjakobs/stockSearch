@@ -42,7 +42,6 @@ class Ticker():
     def saveC25Tickers(self):
         resp = requests.get('https://en.wikipedia.org/wiki/OMX_Copenhagen_25')
         soup = bs.BeautifulSoup(resp.text, 'lxml')
-        table = soup.find()
 
         table = soup.find('table', {'class': 'wikitable sortable'})
         tickers = []
