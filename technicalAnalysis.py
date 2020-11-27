@@ -20,7 +20,7 @@ class Analyzer():
         pass
 
     def get_data(self,ticker):
-        #print(ticker)
+        print("Stock ticker: {}".format(ticker))
         data = yf.download(ticker, self.start, self.end)
         return data
 
