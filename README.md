@@ -1,6 +1,6 @@
 # stockSearch
 
-Require packages: bs4, pickle, requests, sys, yfinance, matplotlib, mplfinance, datetime, pandas.
+Require packages: bs4, pickle, requests, sys, os, yfinance, matplotlib, mplfinance, datetime, pandas.
 
 This repository contain python scripts to search for stocks in indexes such as sp500, etc.
 Stock tickers and names are found by webscrabing e.g. wikipedia using tickerGenerator.py
